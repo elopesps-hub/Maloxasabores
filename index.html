@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Maloxa Sabores - O Jogo do Chef</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pinkbrand: { 500: '#ec4899', 600: '#db2777', 700: '#be185d', 950: '#500724' },
+                        yellowbrand: { 400: '#facc15', 500: '#eab308' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-pink-50 text-gray-800 font-sans min-h-screen flex flex-col items-center justify-between p-2 select-none">
+
+    <!-- TELA INICIAL (HISTÓRIA + NOME + RANKING TOP 5) -->
+    <div id="home-screen" class="w-full max-w-sm flex flex-col space-y-3 py-2">
+        <div class="bg-pink-600 text-white p-4 rounded-3xl shadow-md text-center border-2 border-yellow-400 space-y-1">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-400 text-pink-950 font-black text-lg shadow">
+                MS
+            </div>
+            <h1 class="text-xl font-black uppercase tracking-wider">Maloxa Sabores</h1>
+            <p class="text-[11px] text-yellow-200">Culinária Afetiva • São Gonçalo dos Campos</p>
+        </div>
+
+        <div class="bg-white rounded-3xl p-4 shadow-sm border-2 border-pink-200 text-xs text-gray-700 space-y-2 leading-relaxed">
+            <h2 class="font-black text-pink-700 text-sm flex items-center">
+                <i class="fa-solid fa-heart text-pink-500 mr-1.5"></i> Nossa História
+            </h2>
+            <p>
+                O restaurante nasceu em 2020, no início da pandemia, quando a Luciléia foi demitida e teve de recomeçar do zero com apenas R$ 50 investidos em pizzas. Com a ajuda da família nas redes sociais e o sucesso estrondoso das comidas tradicionais, conquistamos o coração de São Gonçalo dos Campos.
+            </p>
+            <p>
+                Consagrados pelo nosso premiado <b>Medalhão de Frango</b> com tomate seco, queijo coalho e bacon no concurso <i>Sou Mais Meu Frango</i>, trazemos agora o melhor do nosso cardápio para você se divertir!
+            </p>
+        </div>
+
+        <div class="bg-white rounded-3xl p-4 shadow-sm border-2 border-pink-200 space-y-2.5 text-center">
+            <label class="block text-xs font-black text-pink-900 uppercase">Digite seu nome para jogar:</label>
+            <input type="text" id="player-name-input" maxlength="15" placeholder="Seu nome ou apelido..." class="w-full px-3 py-2.5 rounded-xl border-2 border-pink-300 text-sm text-center focus:outline-none focus:ring-2 focus:ring-pink-500 font-bold text-pink-900">
+            <button onclick="startAppFromHome()" class="w-full py-3 bg-yellow-400 hover:bg-yellow-500 text-pink-950 font-black rounded-xl shadow-md text-xs cursor-pointer border-b-4 border-yellow-600">
+                Avançar para o Jogo 🎮
+            </button>
+        </div>
+
+        <div class="bg-white rounded-3xl p-4 shadow-sm border-2 border-yellow-400 space-y-2">
+            <h2 class="text-xs font-black text-pink-700 uppercase tracking-wider text-center flex items-center justify-center">
+                <i class="fa-solid fa-trophy text-yellow-500 mr-1.5"></i> Ranking Top 5 - Maiores Chefes
+            </h2>
+            <div id="home-ranking-list" class="space-y-1.5 text-xs bg-pink-50 p-2.5 rounded-2xl border border-pink-200">
+                <!-- Preenchido via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA PRINCIPAL DO JOGO (2 PISTAS COM COLISÃO EXATA NA TRAVESSA) -->
+    <div id="main-game-screen" class="hidden w-full max-w-sm flex-1 flex flex-col justify-between py-1 space-y-2">
+        
+        <div class="bg-pink-600 text-white p-3 rounded-2xl shadow-sm border-2 border-yellow-400 text-center space-y-1">
+            <p class="text-[10px] font-bold text-yellow-300 uppercase tracking-wide">Enquanto você espera o nosso pedido, aproveite para jogar!</p>
+            <div class="flex justify-between items-center pt-1 border-t border-pink-500">
+                <span class="text-xs font-black truncate max-w-[140px]">Chef: <span id="display-player-name" class="text-yellow-300">Convidado</span></span>
+                <span id="level-badge" class="px-2 py-0.5 bg-yellow-400 text-pink-950 font-black text-[9px] rounded-full">Nível 1 (Normal)</span>
+            </div>
+        </div>
+
+        <div class="flex justify-around bg-white p-2.5 rounded-2xl border-2 border-pink-200 text-xs font-bold text-pink-900 shadow-sm">
+            <div>Pontos: <span id="score" class="text-pink-600 font-black text-sm">0</span></div>
+            <div>Vidas: <span id="lives" class="text-red-600 font-black text-sm">❤️❤️❤️</span></div>
+        </div>
+
+        <!-- ARENA DO JOGO COM ALTURA CORRETA PARA A TRAVESSA -->
+        <div class="relative w-full h-[320px] bg-gradient-to-b from-pink-950/10 to-pink-950/25 rounded-3xl border-2 border-pink-400 overflow-hidden shadow-inner flex flex-col justify-between" id="game-arena">
+            
+            <div class="absolute inset-0 flex justify-center pointer-events-none">
+                <div class="w-px h-full border-r-2 border-dashed border-pink-400/50"></div>
+            </div>
+
+            <!-- PRATO DESCENDO ATÉ O NÍVEL DA TRAVESSA -->
+            <div id="falling-item" class="absolute transition-all duration-75 text-center flex flex-col items-center z-10" style="top: 0px; left: 45px; width: 90px;">
+                <div id="item-illustration" class="w-12 h-12 bg-white rounded-2xl shadow-md border-2 border-pink-400 flex items-center justify-center text-2xl">🥩</div>
+                <span id="item-label" class="text-[9px] font-black bg-white/95 text-pink-950 px-1.5 py-0.5 rounded shadow border border-pink-200 mt-0.5 whitespace-nowrap">Medalhão</span>
+            </div>
+            
+            <!-- TRAVESSA POSICIONADA EXATAMENTE ONDE O ITEM CHEGA -->
+            <div id="basket" class="absolute bottom-4 w-36 h-10 bg-yellow-400 text-pink-950 rounded-2xl shadow-lg border-2 border-pink-600 flex items-center justify-center font-black text-xs transition-all duration-100 z-20" style="left: 15px;">
+                🥘 Travessa Maloxa
+            </div>
+        </div>
+
+        <!-- 2 BOTÕES GRANDES (ESQUERDA E DIREITA) -->
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="moveBasket('left')" class="py-3.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-2xl shadow cursor-pointer active:scale-95 transition-all border-b-4 border-pink-900">
+                ◀️ Esquerda
+            </button>
+            <button onclick="moveBasket('right')" class="py-3.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-2xl shadow cursor-pointer active:scale-95 transition-all border-b-4 border-pink-900">
+                Direita ▶️
+            </button>
+        </div>
+
+        <div id="game-over-screen" class="hidden space-y-2 pt-1">
+            <div class="p-3 bg-white rounded-2xl border-2 border-pink-400 text-xs text-pink-950 font-bold text-center shadow-md">
+                <p class="text-sm font-black text-pink-700">Fim de Jogo! 🍳</p>
+                <p id="final-score-text" class="text-sm mt-1">Pontuação: 0</p>
+                <p class="text-[10px] font-medium text-gray-600 mt-0.5">O seu pedido já está saindo do fogo com muito carinho!</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="backToHomeFromGame()" class="py-3 bg-pink-600 text-white font-black text-xs rounded-xl shadow cursor-pointer">
+                    🏠 Início / Ranking
+                </button>
+                <button onclick="restartGame()" class="py-3 bg-yellow-400 hover:bg-yellow-500 text-pink-950 font-black text-xs rounded-xl shadow cursor-pointer border-b-4 border-yellow-600">
+                    Jogar de Novo 🔄
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full max-w-sm mt-2 bg-white/90 backdrop-blur-sm p-2.5 rounded-2xl border-2 border-pink-200 text-center shadow-sm space-y-1">
+        <p class="text-[10px] font-black text-pink-700 uppercase tracking-wide">Maloxa Sabores • Culinária Afetiva</p>
+        <div class="flex justify-center items-center space-x-3 text-[10px] font-bold text-gray-700">
+            <a href="https://www.instagram.com/maloxasabores/" target="_blank" class="hover:text-pink-600 flex items-center space-x-1">
+                <i class="fa-brands fa-instagram text-pink-600"></i> <span>@maloxasabores</span>
+            </a>
+            <span>•</span>
+            <a href="tel:7581301715" class="hover:text-pink-600 flex items-center space-x-1">
+                <i class="fa-solid fa-phone text-pink-600"></i> <span>(75) 8130-1715</span>
+            </a>
+        </div>
+    </footer>
+
+    <script>
+        let playerName = "Chef";
+        let score = 0;
+        let lives = 3;
+        let currentLane = 0; // 0 = Esquerda, 1 = Direita
+        let itemLane = 0;
+        let itemY = 0;
+        let currentItem = { icon: '🥩', name: 'Medalhão de Frango', type: 'good' };
+        let gameInterval = null;
+        let gameRunning = false;
+        let fallSpeed = 2.5;
+
+        // Posições amplas para as 2 pistas perfeitamente alinhadas com a travessa
+        const lanePositions = [15, 145]; 
+
+        const itemPool = [
+            { icon: '🍗', name: 'Frango Parmegiana', type: 'good' },
+            { icon: '🍲', name: 'Feijoada Completa', type: 'good' },
+            { icon: '🥩', name: 'Medalhão de Frango', type: 'good' },
+            { icon: '🍜', name: 'Yakisoba', type: 'good' },
+            { icon: '🍝', name: 'Macarrão Completo', type: 'good' },
+            { icon: '🥗', name: 'Salada de Salmão', type: 'good' },
+            { icon: '🥙', name: 'Salada Frango', type: 'good' },
+            { icon: '🥩', name: 'Salada Isca Carne', type: 'good' },
+            { icon: '🥘', name: 'Isca Molho Madeira', type: 'good' },
+            { icon: '🍛', name: 'Estrogonofe Batata', type: 'good' },
+            // Armadilhas
+            { icon: '📱', name: 'Telemóvel', type: 'bad' },
+            { icon: '🧸', name: 'Brinquedo', type: 'bad' },
+            { icon: '💻', name: 'Notebook', type: 'bad' },
+            { icon: '🎮', name: 'Vídeo-game', type: 'bad' }
+        ];
+
+        window.onload = function() {
+            renderHomeRanking();
+        };
+
+        function startAppFromHome() {
+            const input = document.getElementById('player-name-input').value.trim();
+            if (!input) { alert('Por favor, digite o seu nome para começar!'); return; }
+            playerName = input;
+            document.getElementById('display-player-name').innerText = playerName;
+            
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('main-game-screen').classList.remove('hidden');
+            startGame();
+        }
+
+        function backToHomeFromGame() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            document.getElementById('main-game-screen').classList.add('hidden');
+            document.getElementById('home-screen').classList.remove('hidden');
+            renderHomeRanking();
+        }
+
+        function startGame() {
+            score = 0;
+            lives = 3;
+            currentLane = 0;
+            fallSpeed = 2.5;
+            gameRunning = true;
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('score').innerText = score;
+            document.getElementById('level-badge').innerText = 'Nível 1 (Normal)';
+            updateLivesDisplay();
+            updateBasketPosition();
+            spawnNewItem();
+
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(updateGame, 25);
+        }
+
+        function moveBasket(dir) {
+            if (!gameRunning) return;
+            if (dir === 'left') currentLane = 0;
+            if (dir === 'right') currentLane = 1;
+            updateBasketPosition();
+        }
+
+        function updateBasketPosition() {
+            const basket = document.getElementById('basket');
+            basket.style.left = lanePositions[currentLane] + 'px';
+        }
+
+        function spawnNewItem() {
+            const randItem = itemPool[Math.floor(Math.random() * itemPool.length)];
+            currentItem = randItem;
+            itemLane = Math.floor(Math.random() * 2); // 0 ou 1
+            itemY = 0;
+
+            const iconEl = document.getElementById('item-illustration');
+            const labelEl = document.getElementById('item-label');
+            const containerEl = document.getElementById('falling-item');
+
+            iconEl.innerText = currentItem.icon;
+            labelEl.innerText = currentItem.name;
+            containerEl.style.left = (lanePositions[itemLane] + 20) + 'px';
+        }
+
+        function updateGame() {
+            if (!gameRunning) return;
+
+            // Dificuldade progressiva a cada 100 pontos
+            if (score >= 400) {
+                fallSpeed = 6.0;
+                document.getElementById('level-badge').innerText = 'Nível 5 (Mestre 🔥)';
+            } else if (score >= 300) {
+                fallSpeed = 5.0;
+                document.getElementById('level-badge').innerText = 'Nível 4 (Extremo ⚡)';
+            } else if (score >= 200) {
+                fallSpeed = 4.0;
+                document.getElementById('level-badge').innerText = 'Nível 3 (Difícil 🚀)';
+            } else if (score >= 100) {
+                fallSpeed = 3.2;
+                document.getElementById('level-badge').innerText = 'Nível 2 (Médio ✨)';
+            } else {
+                fallSpeed = 2.5;
+                document.getElementById('level-badge').innerText = 'Nível 1 (Normal)';
+            }
+
+            itemY += fallSpeed; 
+            const containerEl = document.getElementById('falling-item');
+            containerEl.style.top = itemY + 'px';
+
+            // Colisão exata quando o item chega na altura da travessa (por volta de y = 240)
+            if (itemY >= 235 && itemY <= 270) {
+                if (itemLane === currentLane) {
+                    if (currentItem.type === 'good') {
+                        score += 10;
+                        document.getElementById('score').innerText = score;
+                    } else {
+                        lives--;
+                        updateLivesDisplay();
+                        if (lives <= 0) {
+                            endGame();
+                            return;
+                        }
+                    }
+                    spawnNewItem();
+                }
+            }
+
+            // Se cair no chão sem ser apanhado
+            if (itemY > 280) {
+                if (currentItem.type === 'good') {
+                    lives--; 
+                    updateLivesDisplay();
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+                spawnNewItem();
+            }
+        }
+
+        function updateLivesDisplay() {
+            let hearts = '';
+            for(let i=0; i<lives; i++) hearts += '❤️';
+            document.getElementById('lives').innerText = hearts || '💔';
+        }
+
+        function endGame() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            document.getElementById('final-score-text').innerText = `Pontuação final: ${score}`;
+            saveScoreToRanking(playerName, score);
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        function saveScoreToRanking(name, pts) {
+            let ranking = JSON.parse(localStorage.getItem('maloxa_ranking') || '[]');
+            ranking.push({ name, score: pts, date: new Date().toLocaleDateString() });
+            ranking.sort((a, b) => b.score - a.score);
+            ranking = ranking.slice(0, 5);
+            localStorage.setItem('maloxa_ranking', JSON.stringify(ranking));
+        }
+
+        function renderHomeRanking() {
+            const ranking = JSON.parse(localStorage.getItem('maloxa_ranking') || '[]');
+            const listEl = document.getElementById('home-ranking-list');
+            
+            if (ranking.length === 0) {
+                listEl.innerHTML = '<p class="text-gray-400 text-center py-1 text-xs">Ainda sem pontuações. Seja o primeiro!</p>';
+            } else {
+                listEl.innerHTML = ranking.map((r, idx) => `
+                    <div class="flex justify-between items-center py-1 border-b border-pink-100 last:border-0 font-bold text-gray-700 text-xs">
+                        <span>${idx + 1}. ${r.name}</span>
+                        <span class="text-pink-600">${r.score} pts</span>
+                    </div>
+                `).join('');
+            }
+        }
+    </script>
+</body>
+</html>
